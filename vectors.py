@@ -43,11 +43,11 @@ class Vector(object):
     def orientation(self, v1):
         ## find clockwise/cunterclockwise orientaiton of self and v1
         if self.slope() = v1.slope():
-            return 0
+            return 0  ## colinear
         elif self.slope() < v1.slope()
-            return -1
+            return -1  ## counterclockwise
         elif self.slope() > v1.slope():
-            return 1
+            return 1  ## clockwise
 
 """ Polygon Class """
 ## Convex Polygons only (no circles see below)
@@ -155,7 +155,7 @@ class Circle(object):
             return False
         return True
     def decompose(self):
-        ## decomposes circle into hexagon
+        ## decomposes circle into regular hexagon
         vertices = []
         vertices.append(self.center.add(Vector((self.r/((3.0)**.5)),self.r)))  # top left
         vertices.append(self.center.add(Vector((self.r/((3.0)**.5)),-self.r)))  # bottom left
@@ -177,7 +177,7 @@ def compare(a,b):
         return ans
 
 def convex_hull(polygons):
-    ## find convex full surrounding list of Polygons
+    ## find convex full surrounding list of Polygons using Graham's scan
     points = []
     for poly in polygons:
         temp = poly.vertices
@@ -189,11 +189,24 @@ def convex_hull(polygons):
     for point in points:
         point.add(p0_)
     s_points = sorted(points, cmp=compare)
-    for i in range(len(s_points)-1):
-        s
-    stack = [p0]
+    stack = [Vector(0,0)]
     for i in range(2):
         stack.append(s_points[i])
+    for i in range(2, len(s_points)-1):
+        right = True
+        while right:
+            first = stack[-2].add(stack[-3].scalar(-1))
+            second = stack[-1].add(stack[-2].scalar(-1))
+            check = first.orientation(second)
+            if check == -1:
+                right = False
+            stack.pop(-1)
+        stack.append(s_points[i])
+    ans = []
+    for point in stack:
+        ans.append(point.add(p0))
+    return ans
+
 
 
 
