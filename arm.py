@@ -1,3 +1,5 @@
+from RRT import Node, C_Space, RRT
+
 ### Constants ###
 
 """ Cup constants """
@@ -62,12 +64,12 @@ class Cup(object):
         self.live = live
     def kill(self):
         self.live = False
-        self.center = 
+        self.center = ## deadzone coordinate
 
-### Arm Class ###
+""" Arm Class """
 class Arm(object):
     TRIANGLE_LENGTH = 4*2*Cup.CUP_RADIUS
-    def __init__(self, center, orientation=0, grid):
+    def __init__(self, center, orientation=0):
         self.center = grid.GRID_CENTER  ### x,y coordinate of center of Equilateral Triangle
         self.orientation = orientation  ### angle of rotation off of perfect vertical like so: ∆, positive is clockwise
         self.cups = grid.cups
@@ -81,7 +83,10 @@ class Game(object):
         self.rack = rack  ## current rack
     def rerack_target_locations(cups, command):
       ## Return list of locations for cups in 'command' rerack
-      num_live = len(cups)
+      num_live = 0  ## number of cups still in play
+      for cup in self.cups:
+        if cup.live:
+          num_live += 1
       rack = None  ## desired rerack
       for statement in Reracks.RERACKS:
           if command == statement:

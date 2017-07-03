@@ -1,6 +1,7 @@
 import math
 
 """ 2D Vector Class """
+## consider updating vector functions to update the object instead of returning new vector
 class Vector(object):
     def __init__(self, x, y):
         ## x and y are coordinates of a point
@@ -63,7 +64,8 @@ class Polygon(object):
         for vertex in self.vertices:
             new_vertex = vertex.rotate(angle)
             new_vertices.append(new_vertex)
-        return Polygon(center, new_vertices, angle)
+        self.vertices = new_vertices
+        self.rotation = angle
     def translate(self, shift):
         ## get polygon translated by vector "shift"
         new_vertices = []
@@ -71,7 +73,8 @@ class Polygon(object):
             new_vertex = vertex.add(shift)
             new_vertices.append(new_vertex)
         new_center = center.add(shift)
-        return Polygon(new_center, new_vertices, self.rotation)
+        self.center = new_center
+        self.vertices = new_vertices
     def normals(self):
         ## list of normal vectors
         edges = []
@@ -121,7 +124,7 @@ class Circle(object):
     def translate(self, shift):
         ## get circle translated by shift
         new_center = self.center.add(shift)
-        return Polygon(new_center, self.r)
+        self.center = new_center
     def is_poly_collision(self, other):
         ## checks if circle intersects with a polygon
         connectors = []
@@ -165,18 +168,17 @@ class Circle(object):
         vertices.append(self.center.add(Vector(-(2.0*self.r/((3.0)**.5)),0))) # left
         return Polygon(self.center, vertices)
 
-def compare(a,b):
-    ## compare two vectors
-    ans = a.orientation(b)
-    if ans = 0:
-        if a.mag() >= b.mag():
-            return 1
-        else:
-            return -1
-    else:
-        return ans
-
 def convex_hull(polygons):
+    def compare(a,b):
+        ## metric for comparing two vectors
+        ans = a.orientation(b)
+        if ans = 0:
+            if a.mag() >= b.mag():
+                return 1
+            else:
+                return -1
+        else:
+            return ans
     ## find convex full surrounding list of Polygons using Graham's scan
     points = []
     for poly in polygons:
