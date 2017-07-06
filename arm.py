@@ -1,4 +1,5 @@
 from RRT import Node, C_Space, RRT
+from vectors import *
 
 ### Constants ###
 
@@ -15,44 +16,44 @@ TABLE_HEIGHT = 7.0
 TRIANGLE_LENGTH = RADIUS*4*2
 ### Cup index: (x-shift,y-shift) where shift is from center of cup ###
 TEN_CUP_MAP = {1: (0,TRIANGLE_LENGTH*(3.0**.5)/2.0-RADIUS),
-               2: (-1.0*RADIUS,TRIANGLE_LENGTH*(3.0**.5)/2.0-3.0*RADIUS)
-               3: (RADIUS,TRIANGLE_LENGTH*(3.0**.5)/2.0-3.0*RADIUS)
-               4: 
-               5: (0,0)
-               6:
-               7: 
-               8:
-               9:
-               10: }
+               2: (-1.0*RADIUS,TRIANGLE_LENGTH*(3.0**.5)/2.0-3.0*RADIUS),
+               3: (RADIUS,TRIANGLE_LENGTH*(3.0**.5)/2.0-3.0*RADIUS),
+               4: None,
+               5: (0,0),
+               6: None,
+               7: None,
+               8: None,
+               9: None,
+               10: None}
 
 """ Game constants """
 
 
 """ Rerack Class """
 class Reracks(object):
-## user input codes to rack name
-RERACKS = {'':'FULLRACK',
-           '':'THREETWOONE',
-           '':'SIDECAR',
-           '':'WIZARDSTAFF',
-           '':'TWOBYTWO',
-           '':'PLAYBUTTON',
-           '':'STOPLIGHT',
-           '':'GENTLEMANS',
-           '':'CENTER'
-           }
-## rerack name to locations list
-## locations lists list cup coordinates in order of increasing y-coordinate with lowest x-coordinate tie breaker
-RERACK_MAP = {'FULLRACK':[],
-              'THREETWOONE':[],
-              'SIDECAR':[],
-              'WIZARDSTAFF':[],
-              'TWOBYTWO':[],
-              'PLAYBUTTON':[],
-              'STOPLIGHT':[],
-              'GENTLEMANS':[],
-              'CENTER':[]
+  ## user input codes to rack name
+  RERACKS = {'':'FULLRACK',
+             '':'THREETWOONE',
+             '':'SIDECAR',
+             '':'WIZARDSTAFF',
+             '':'TWOBYTWO',
+             '':'PLAYBUTTON',
+             '':'STOPLIGHT',
+             '':'GENTLEMANS',
+             '':'CENTER'
              }
+  ## rerack name to locations list
+  ## locations lists list cup coordinates in order of increasing y-coordinate with lowest x-coordinate tie breaker
+  RERACK_MAP = {'FULLRACK':[],
+                'THREETWOONE':[],
+                'SIDECAR':[],
+                'WIZARDSTAFF':[],
+                'TWOBYTWO':[],
+                'PLAYBUTTON':[],
+                'STOPLIGHT':[],
+                'GENTLEMANS':[],
+                'CENTER':[]
+               }
 
 """ Cup Class """
 class Cup(object):
@@ -60,18 +61,25 @@ class Cup(object):
     def __init__(self, iden, center, live=True):
         self.iden = iden  ## unique ID number
         self.center = center  # coordinates of center
-        self.circle = Circle(center,CUP_RADIUS+TOLERANCE)  ## Circle object to represent cup
+        self.circle = Circle(center,Cup.CUP_RADIUS+TOLERANCE)  ## Circle object to represent cup
         self.live = live
+        self.radius = Cup.CUP_RADIUS
+        self.ncs = self.get_compatible_coords()
     def kill(self):
         self.live = False
-        self.center = ## deadzone coordinate
+        self.center = None ## deadzone coordinate
+    def get_compatible_coords(self):
+        gui_shift = 500
+        return [gui_shift+self.center[0]-self.radius, gui_shift+self.center[1]-self.radius, gui_shift+self.center[0]+self.radius, gui_shift+self.center[1]+self.radius]
+
 
 """ Arm Class """
 class Arm(object):
     TRIANGLE_LENGTH = 4*2*Cup.CUP_RADIUS
     def __init__(self, center, orientation=0):
         self.center = grid.GRID_CENTER  ### x,y coordinate of center of Equilateral Triangle
-        self.orientation = orientation  ### angle of rotation off of perfect vertical like so: ∆, positive is clockwise
+        self.orientation = orientation  ### angle of rotation off of perfect vertical 
+                                        #like so: triangle, positive is clockwise
         self.cups = grid.cups
         self.targets = grid.targets
 

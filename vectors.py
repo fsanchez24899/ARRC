@@ -43,9 +43,9 @@ class Vector(object):
         return Vector(new_x, new_y)
     def orientation(self, v1):
         ## find clockwise/cunterclockwise orientaiton of self and v1
-        if self.slope() = v1.slope():
+        if self.slope() == v1.slope():
             return 0  ## colinear
-        elif self.slope() < v1.slope()
+        elif self.slope() < v1.slope():
             return -1  ## counterclockwise
         elif self.slope() > v1.slope():
             return 1  ## clockwise
@@ -172,7 +172,7 @@ def convex_hull(polygons):
     def compare(a,b):
         ## metric for comparing two vectors
         ans = a.orientation(b)
-        if ans = 0:
+        if ans == 0:
             if a.mag() >= b.mag():
                 return 1
             else:

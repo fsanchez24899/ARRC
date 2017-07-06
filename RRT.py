@@ -36,7 +36,7 @@ class C_Space(object):
                 if shape is Circle:
                     if shape.is_poly_collision(obstacle):
                         return True
-                elif shape if Polygon:
+                elif shape is Polygon:
                     if shape.is_collision(obstacle):
                         return True
             else:
@@ -44,7 +44,7 @@ class C_Space(object):
         return False
     def line_collision(self, start, end):
         ## determines if line segment intersects with obstacle
-        
+        pass
 
 """ RRT Class """
 class RRT(object):
