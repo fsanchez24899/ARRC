@@ -1,7 +1,7 @@
 import math
 
 """ 2D Vector Class """
-## consider updating vector functions to update the object instead of returning new vector
+## TODO: consider updating vector functions to update the object instead of returning new vector
 class Vector(object):
     def __init__(self, x, y):
         ## x and y are coordinates of a point
@@ -14,8 +14,8 @@ class Vector(object):
         return Vector(dx,dy)
     def scalar(self, c):
         ## get vector multiplied by scalar
-        cx = c*x
-        cy = c*y
+        cx = c*self.x
+        cy = c*self.y
         return Vector(cx, cy)
     def mag(self):
         ## vector magnitude
@@ -37,12 +37,12 @@ class Vector(object):
         ## get unit vector
         return Vector(float(self.x)/self.mag(), float(self.y)/self.mag())
     def rotate(self, angle):
-        ## get vector rotated by angle
+        ## get vector rotated by angle using rotation matrix
         new_x = math.cos(angle)*self.x + -math.sin(angle)*self.y
         new_y = math.sin(angle)*self.x + math.cos(angle)*self.y
         return Vector(new_x, new_y)
     def orientation(self, v1):
-        ## find clockwise/cunterclockwise orientaiton of self and v1
+        ## find clockwise/cunterclockwise orientaiton of self and v1 (for use in Convex Hull)
         if self.slope() == v1.slope():
             return 0  ## colinear
         elif self.slope() < v1.slope():
@@ -51,7 +51,7 @@ class Vector(object):
             return 1  ## clockwise
 
 """ Polygon Class """
-## Convex Polygons only (no circles see below)
+## Convex Polygons only (no circles; see below)
 class Polygon(object):
     def __init__(self, center, vertices, rotation=0):
         ## center and vertices (list) are vectors
@@ -59,15 +59,18 @@ class Polygon(object):
         self.vertices = vertices
         self.rotation = rotation
     def rotate(self, angle):
-        ## get polygon rotated by angle
+        ## update polygon to be rotated about its center by angle
         new_vertices = []
+        cen_flip = self.center.scalar(-1)
         for vertex in self.vertices:
-            new_vertex = vertex.rotate(angle)
+            point = vertex.add(cen_flip)
+            new_point = point.rotate(angle)
+            new_vertex = new_point.add(self.center)
             new_vertices.append(new_vertex)
         self.vertices = new_vertices
         self.rotation = angle
     def translate(self, shift):
-        ## get polygon translated by vector "shift"
+        ## update polygon to be translated by vector "shift"
         new_vertices = []
         for vertex in self.vertices:
             new_vertex = vertex.add(shift)
@@ -160,9 +163,9 @@ class Circle(object):
     def decompose(self):
         ## decomposes circle into regular hexagon
         vertices = []
-        vertices.append(self.center.add(Vector((self.r/((3.0)**.5)),self.r)))  # top left
-        vertices.append(self.center.add(Vector((self.r/((3.0)**.5)),-self.r)))  # bottom left
-        vertices.append(self.center.add(Vector(-(self.r/((3.0)**.5)),self.r)))  # top right
+        vertices.append(self.center.add(Vector((self.r/((3.0)**.5)),self.r)))  # top left                 1  3
+        vertices.append(self.center.add(Vector((self.r/((3.0)**.5)),-self.r)))  # bottom left           6      5    
+        vertices.append(self.center.add(Vector(-(self.r/((3.0)**.5)),self.r)))  # top right               2  4
         vertices.append(self.center.add(Vector(-(self.r/((3.0)**.5)),-self.r)))  # bottom right
         vertices.append(self.center.add(Vector((2.0*self.r/((3.0)**.5)),0)))  # right
         vertices.append(self.center.add(Vector(-(2.0*self.r/((3.0)**.5)),0))) # left
@@ -180,6 +183,7 @@ def convex_hull(polygons):
         else:
             return ans
     ## find convex full surrounding list of Polygons using Graham's scan
+    ## return Hull as list of vector points in original coordinate system
     points = []
     for poly in polygons:
         temp = poly.vertices
