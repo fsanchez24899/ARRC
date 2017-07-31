@@ -1,5 +1,5 @@
 import math
-from RRT import Node, C_Space, RRT
+from RRT import *
 from vectors import *
 
 """ Constants Class """
@@ -27,7 +27,8 @@ class Constants(object):
                    10: (-(TRIANGLE_LENGTH/2.0-CORNER_SHIFT-RADIUS),-(TRIANGLE_LENGTH*(3.0**.5)/6.0-RADIUS))}
 
     """ Game constants """
-
+    TABLE_HEIGHT = TRIANGLE_LENGTH*(3.0**.5)/2.0+6.0*RADIUS
+    TABLE_WIDTH = TRIANGLE_LENGTH+12.0*RADIUS
 
     """ Rerack constants """
     ## user input codes to rack name
@@ -85,9 +86,11 @@ class Arm(object):
         self.pcups = {}  ## cups currentluy picked up mapped to by magnet label to which they are locked
     def move(self, target, rotation):
         ''' translate triangle center to "target" (given as Vector) and rotate as given '''
+        ## TODO: implement this
         pass
     def lock(self, label):
         ''' lock magnet "label" to pick up cup '''
+        ## TODO: Implement this
         ## TODO: when a cup is picked up update its label
         pass
 
@@ -108,6 +111,7 @@ class Game(object):
             self.cups[letters[i]] = cup
     def rerack_target_labels(self, command):
         ''' Return list of labels for cups in 'command' rerack in triangle coordinates, or return failure '''
+        ## TODO: Fix "bad input" stuff to be useful in play
         num_live = 0  ## number of cups still in play
         for cup in self.cups.values():
             if cup.live:
@@ -131,18 +135,7 @@ class Game(object):
             return
     def rerack(self, command):
         ''' Perform all necessary actions to rerack game state '''
-        ## only to be called if rerack_target_labels was successful    
-        def pickup(self, cup_id, label):
-            ''' move triange to pickup cup with id "cup_id" using magnet "label" and update game state accordingly '''
-            ## TODO: call robot movement stuff here
-            init_tar = self.cups[cup_id].center
-            coord = Constants.TEN_CUP_MAP[label]
-            shift = Vector(coord[0],coord[1])
-            fin_tar = init_tar.add(shift)
-            # move triangle center to fin_tar
-            # self.triangle.move(fin_tar)
-            # self.triangle.lock(label)
-            # self.triangle.pcups[label] = self.cups[cup_id]
+        ## TODO: Iplement this
 
 
 

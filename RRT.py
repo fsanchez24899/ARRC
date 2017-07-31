@@ -52,6 +52,8 @@ class Vector_3(object):
         a = self.a*c
         return Vector_3(x,y,a)
 
+""" Fix Barriers """
+## Rectangles on barrier 1 cup thick
 top = Polygon(Vector(0,Constants.TABLE_HEIGHT+Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
     [Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
     Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
@@ -134,9 +136,8 @@ class RRT(object):
     def __init__(self, root, c_space):
         ## root is root node, c_space gives collision function, nodes is tree in dictionary representation
         self.nodes = [root]
-        self.edges = []
         self.c_space = c_space
-    def select_rand(self, a,b,c,d):
+    def select_rand(self):
         ''' select new random point to explore '''
         new_x = random.uniform(a,b) ### FILL a,b
         new_y = random.uniform(c,d) ### FILL c,d
@@ -191,7 +192,8 @@ class RRT(object):
                 valid = not self.c_space.point_collision(new_x)
             return new_x
     def find_path(self, target):
-        ''' return the shortest valid path to target from root based on current RRT state '''
+        ''' return the shortest valid path to target from root by expanding RRT '''
+        ## TODO: Finish implementing this
         target = find_goal(target)
         recent = self.nodes[-1]
         itera = 1
@@ -200,9 +202,20 @@ class RRT(object):
             recent = self.nodes[-1]
             itera+=1
         if itera = ITERATIONS:
-            ## RRT failed
+            ## RRT failed (TODO: what to do next?)
         else:
-            ## path smoothing
+            self.nodes.append(Node(target, [], recent))  ## adds target to tree
+            ## find path by backtracking (every node only has 1 parent)
+            path = []
+            current = self.nodes[-1]
+            while current != nodes[0]
+                path.append(current)  ## will never append root config
+                current = current.parent
+            states = []
+            for node in path[::-1]:
+                states.append(node.data)
+            return states  ## returns states in form of Vector_3 objects
+            ## TODO: do path smoothing (if necessary)
 
 
 
