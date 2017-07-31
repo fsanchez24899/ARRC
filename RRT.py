@@ -1,7 +1,7 @@
 import math
 from random import uniform
 from vectors import Vector, Polygon, Circle
-from arm import *
+from arm import Constants
 
 TUNING = [1,1]  ## use to Tune distance metric
 RESOLUTION = 1  ## use to tune line search
@@ -76,6 +76,14 @@ right = Polygon(Vector(-(Constants.TABLE_WIDTH/2.0+Constants.RADIUS),0),
     Vector(-(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS),-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
 barrier = [top, left, bot, right]
 
+""" Generate Triangle """
+def gen_triangle(vec):
+    ## vec is center
+    top = Vector(vec.x,vec.y+Constants.TRIANGLE_LENGTH*(3.0**.5)/3.0)
+    left = Vector(vec.x+Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
+    right = Vector(vec.x-Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
+    triangle = Polygon(vec.x,vec.y,[top,left,right],0)
+
 """ C_Space Class """
 class C_Space(object):
     def __init__(self, shape, obstacles):
@@ -87,14 +95,12 @@ class C_Space(object):
     def point_collision(self, vec):
         ''' determine if configuration vec collides with any obstacle '''
         ## determine if triangle is in bounds
-        top = Vector(vec.x,vec.y+Constants.TRIANGLE_LENGTH*(3.0**.5)/3.0)
-        left = Vector(vec.x+Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
-        right = Vector(vec.x-Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
-        triangle = Polygon(vec.x,vec.y,[top,left,right],vec.a)
+        triangle = gen_triangle(Vector(vec.x,vec.y))
+        triangle.rotate(vec.a)
         for edge in self.barriers:
             if edge.is_collision(triangle):
                 return True
-        ## dtermine if blob of cups is colliding
+        ## determine if blob of cups is colliding
         shape = Polygon(self.shape.center,self.shape.vertices,self.shape.rotation)
         shape.translate(Vector(vec.x-shape.center.x,vec.y-shape.center.y))
         shape.rotate_around(triangle.center,vec.a)
@@ -139,8 +145,8 @@ class RRT(object):
         self.c_space = c_space
     def select_rand(self):
         ''' select new random point to explore '''
-        new_x = random.uniform(a,b) ### FILL a,b
-        new_y = random.uniform(c,d) ### FILL c,d
+        new_x = random.uniform(a,b) ### TODO: Fill a,b
+        new_y = random.uniform(c,d) ### TODO: Fill c,d
         new_rotation = random.uniform(0,math.pi)
         return Vector_3(new_x, new_y, new_rotation)
     def find_nearest_node(self, vertex):
@@ -175,25 +181,9 @@ class RRT(object):
             self.nodes.append(Node(new_node, [], nearest))
         else:
             expand_tree()
-    def find_goal(self, target):
-        ''' find goal region given target x,y coordinates '''
-        ## TODO: Fix this and maybe move it to a different place (game class?)
-        x = Vector_3(target[0],target[1],root.data.a)
-        valid = not self.c_space.point_collision(x):
-        if valid:    
-            return x
-        else:
-            count = 1
-            while not valid:
-                if count%2 == 0:
-                    new_x = x.add(Vector_3(0,0,DELTA*count))
-                else:
-                    new_x = x.add(Vector_3(0,0,DELTA*-1*count))
-                valid = not self.c_space.point_collision(new_x)
-            return new_x
     def find_path(self, target):
+        ## target given as Vec_3
         ''' return the shortest valid path to target from root by expanding RRT '''
-        ## TODO: Finish implementing this
         target = find_goal(target)
         recent = self.nodes[-1]
         itera = 1
