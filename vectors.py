@@ -63,12 +63,28 @@ class Polygon(object):
     def rotate(self, angle):
         ## update polygon to be rotated about its center by angle
         new_vertices = []
-        cen_flip = self.center.scalar(-1)
+        cen_flip = self.center.scalar(-1.0)
         for vertex in self.vertices:
             point = vertex.add(cen_flip)
             new_point = point.rotate(angle)
             new_vertex = new_point.add(self.center)
             new_vertices.append(new_vertex)
+        self.vertices = new_vertices
+        self.rotation = angle
+    def rotate_around(self, point, angle):
+        ## update polygon to be rotated about a point by angle
+        new_vertices = []
+        point_flip = point.scalar(-1.0)
+        cen_flip = self.center.scalar(-1.0)
+        shift1 = self.center.add(point_flip)
+        shift2 = shift.rotate(angle)
+        shift_final = shift2.add(point)
+        for vertex in self.vertices:
+            p = vertex.add(cen_flip)
+            new_point = p.rotate(angle)
+            new_vertex = new_point.add(shift_final)
+            new_vertices.append(new_vertex)
+        self.center = shift_final
         self.vertices = new_vertices
         self.rotation = angle
     def translate(self, shift):

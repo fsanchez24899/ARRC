@@ -52,16 +52,50 @@ class Vector_3(object):
         a = self.a*c
         return Vector_3(x,y,a)
 
+top = Polygon(Vector(0,Constants.TABLE_HEIGHT+Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    [Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT+2.0*Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT+2.0*Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
+bot = Polygon(Vector(0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-Constants.RADIUS),
+    [Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(2.0**.5)/6.0),
+    Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-2.0*Constants.RADIUS)
+    Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-2.0*Constants.RADIUS)])
+left = Polygon(Vector(Constants.TABLE_WIDTH/2.0+Constants.RADIUS,0),
+    [Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
+right = Polygon(Vector(-(Constants.TABLE_WIDTH/2.0+Constants.RADIUS),0),
+    [Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(-(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS),Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+    Vector(-(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS),-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
+barrier = [top, left, bot, right]
+
 """ C_Space Class """
 class C_Space(object):
-    def __init__(self, obstacles):
-        ## list of Polygon/Circle obstacles in R2
+    def __init__(self, shape, obstacles):
+        ## shape is blob of cups, obstacles is list of Polygon/Circle obstacles in R2
+        ## barriers is edge of map represented by polygons above
+        self.shape = shape
         self.obstacles = obstacles
+        self.barriers = barrier
     def point_collision(self, vec):
         ''' determine if configuration vec collides with any obstacle '''
-        ## TODO: create shape from C-Space point data
-        ## TODO: create triangle in this file so we can check if triangle collides with obstacles
-        triangle = Polygon
+        ## determine if triangle is in bounds
+        top = Vector(vec.x,vec.y+Constants.TRIANGLE_LENGTH*(3.0**.5)/3.0)
+        left = Vector(vec.x+Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
+        right = Vector(vec.x-Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
+        triangle = Polygon(vec.x,vec.y,[top,left,right],vec.a)
+        for edge in self.barriers:
+            if edge.is_collision(triangle):
+                return True
+        ## dtermine if blob of cups is colliding
+        shape = Polygon(self.shape.center,self.shape.vertices,self.shape.rotation)
+        shape.translate(Vector(vec.x-shape.center.x,vec.y-shape.center.y))
+        shape.rotate_around(triangle.center,vec.a)
         for obstacle in obstacles:
             if obstacle is Circle:
                 if shape is Circle:
@@ -142,6 +176,7 @@ class RRT(object):
             expand_tree()
     def find_goal(self, target):
         ''' find goal region given target x,y coordinates '''
+        ## TODO: Fix this and maybe move it to a different place (game class?)
         x = Vector_3(target[0],target[1],root.data.a)
         valid = not self.c_space.point_collision(x):
         if valid:    
