@@ -1,5 +1,7 @@
 import math
 
+## TODO: fix comment descriptions of methods to use ''' instead of ##
+
 """ 2D Vector Class """
 ## TODO: consider updating vector functions to update the object instead of returning new vector
 class Vector(object):

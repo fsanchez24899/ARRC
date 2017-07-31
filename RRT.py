@@ -1,6 +1,7 @@
 import math
 from random import uniform
 from vectors import Vector, Polygon, Circle
+from arm import *
 
 TUNING = [1,1]  ## use to Tune distance metric
 RESOLUTION = 1  ## use to tune line search
@@ -12,13 +13,13 @@ ITERATIONS = 500  ## use to tune runtime
 """ Node Class """
 class Node(object):
     def __init__(self, coordinate, children, parent):
-        ## coordinate is point in C-Space, children is list of Nodes, parent is Node
+        ''' coordinate is point in C-Space, children is list of Nodes, parent is Node '''
         self.data = coordinate
         self.children = children
         self.parent = parent
 
 """ 3D Vector Class """
-## Represents R2x[0,2pi)
+## Represents R2x[0,2pi) with special metric
 class Vector_3(object):
     def __init__(self, x, y, a):
         ## a is angle
@@ -26,25 +27,26 @@ class Vector_3(object):
         self.y = y
         self.a = a
     def add(self, other):
-        ## get vector that adds other to self
+        ''' get vector that adds other to self '''
         x = self.x+other.x
         y = self.y+other.y
         a = self.a+other.a
         return Vector_3(x,y,a)
     def metric(self, other):
-        ## give distance between self and other in this space
-        ## give higher weight to translation over rotation through "tuning" parameters
+        ''' give distance between self and other in this space '''
+        ''' give higher weight to translation over rotation through "tuning" parameters'''
         dist = ((other.x-self.x)**2+(other.y-self.y)**2)**.5
         rot = abs(other.a-self.a)
         return dist*TUNING[0]+rot*TUNING[1]
     def normalize(self):
-        ## normalize self
+        ''' normalize self '''
         mag = self.metric(Vector_3(0,0,0))
         x = self.x/mag
         y = self.y/mag
         a = self.a/mag
         return Vector_3(x,y,a)
     def scalar(self,c):
+        ''' multiply by scalar '''
         x = self.x*c
         y = self.y*c
         a = self.a*c
@@ -52,13 +54,14 @@ class Vector_3(object):
 
 """ C_Space Class """
 class C_Space(object):
-    def __init__(self, obstacles, tuning):
-        ## list of Polygon/Circle obstacles in R2, tuning parameters
+    def __init__(self, obstacles):
+        ## list of Polygon/Circle obstacles in R2
         self.obstacles = obstacles
-        self.tuning = tuning  # tune metric weight
     def point_collision(self, vec):
-        ## determine if configuration vec collides with any obstacle (create shape from C-Space point data)
+        ''' determine if configuration vec collides with any obstacle '''
+        ## TODO: create shape from C-Space point data
         ## TODO: create triangle in this file so we can check if triangle collides with obstacles
+        triangle = Polygon
         for obstacle in obstacles:
             if obstacle is Circle:
                 if shape is Circle:
@@ -78,7 +81,7 @@ class C_Space(object):
                 return None
         return False
     def line_collision(self, start, end):
-        ## determines if line segment intersects with obstacle via sampling
+        ''' determines if line segment intersects with obstacle via sampling '''
         resolution = RESOLUTION  ## sample resolution in form of max distance allowed between samples
         direction = start.scalar(-1).add(end)
         norm = direction.metric(Vector_3(0,0,0))
@@ -99,14 +102,14 @@ class RRT(object):
         self.nodes = [root]
         self.edges = []
         self.c_space = c_space
-    def select_rand(self):
-        ## select new random point to explore
+    def select_rand(self, a,b,c,d):
+        ''' select new random point to explore '''
         new_x = random.uniform(a,b) ### FILL a,b
         new_y = random.uniform(c,d) ### FILL c,d
         new_rotation = random.uniform(0,math.pi)
         return Vector_3(new_x, new_y, new_rotation)
     def find_nearest_node(self, vertex):
-        ## find node in vertex nearest to "verterx"
+        ''' find node in vertex nearest to "vertex" '''
         min_dist = float(infty)
         min_node = None
         for node in self.nodes:
@@ -116,14 +119,14 @@ class RRT(object):
                 min_node = node
         return min_node
     def new_node(self, vertex, point):
-        ## find the new node by moving form nearest (vertex) to rand (point) RETURNS VEC3 POINT!!!
+        ''' find the new node by moving form nearest (vertex) to rand (point) RETURNS VEC3 POINT!!! '''
         vec = vertex.data
         direction = vec.scalar(-1).add(point)
         mag = direction.metric(Vector_3(0,0,0))
         mag*=EPSILON
         return vec.add(direction.scalar(mag))
     def expand_tree(self):
-        ## expand tree by finding nearest viable node
+        ''' expand tree by finding nearest viable node '''
         viable = False
         new_point = select_rand()
         while not viable:
@@ -138,8 +141,8 @@ class RRT(object):
         else:
             expand_tree()
     def find_goal(self, target):
-        ## find goal region given target x,y coordinates
-        x = Vector_3(target[0].target[1],root.data.a)
+        ''' find goal region given target x,y coordinates '''
+        x = Vector_3(target[0],target[1],root.data.a)
         valid = not self.c_space.point_collision(x):
         if valid:    
             return x
@@ -153,7 +156,7 @@ class RRT(object):
                 valid = not self.c_space.point_collision(new_x)
             return new_x
     def find_path(self, target):
-        ## return the shortest valid path based on Represents
+        ''' return the shortest valid path to target from root based on current RRT state '''
         target = find_goal(target)
         recent = self.nodes[-1]
         itera = 1
