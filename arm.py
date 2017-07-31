@@ -41,7 +41,7 @@ class Reracks(object):
                }
     ## rerack name to locations list
     ## locations lists list cup coordinates in order of increasing y-coordinate with lowest x-coordinate tie breaker
-    ## TODO: use ARRC notebook drawing to map these to labels form TEN_CUP_MAP
+    ## TODO: use ARRC notebook drawing to map these to labels from TEN_CUP_MAP
     RERACK_MAP = {'FULLRACK':[],
                   'THREETWOONE':[],
                   'SIDECAR':[],
@@ -99,8 +99,8 @@ class Game(object):
             final = coord.add(shift)
             cup = Cup(i,final)
             self.cups[i] = cup
-    def rerack_target_locations(self, command):
-        ## Return list of locations for cups in 'command' rerack in triangle coordinates, or return failure
+    def rerack_target_labels(self, command):
+        ## Return list of labels for cups in 'command' rerack in triangle coordinates, or return failure
         num_live = 0  ## number of cups still in play
         for cup in self.cups.values():
             if cup.live:
@@ -110,25 +110,22 @@ class Game(object):
             if command == statement:
                 rack = statement
         if rack != 0:
-            locations = RERACK_MAP[RERACKS[rack]]
-            if len(locations)!=num_live:
+            labels = RERACK_MAP[RERACKS[rack]]
+            if len(labels)!=num_live:
                 ## Ask User to try different rerack
                 print "Bad Input"
                 return
             else:
                 self.rack = rack
-                return locations
-        elif rack is None:
-            ## No change
-            return
+                return labels
         else:
             ## Ask User to try different command
             print "Bad Input"
             return
     def rerack(self, command):
-        ## only to be called if rerack_target_locations was successful    
+        ## only to be called if rerack_target_labels was successful    
         def pickup(self, cup_id, label):
-            ## move triange to pickup cup of id "cup_id" with magnet "label" and update game state accordingly
+            ## move triange to pickup cup with id "cup_id" using magnet "label" and update game state accordingly
             ## TODO: call robot movement stuff here
             init_tar = self.cups[cup_id].center
             coord = TEN_CUP_MAP[label]
@@ -138,8 +135,6 @@ class Game(object):
             # self.triangle.move(fin_tar)
             # self.triangle.lock(label)
             # self.triangle.pcups[label] = self.cups[cup_id]
-
-
 
 
 

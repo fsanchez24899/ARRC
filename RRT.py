@@ -2,28 +2,63 @@ import math
 from random import uniform
 from vectors import Vector, Polygon, Circle
 
+TUNING = [1,1]  ## use to Tune distance metric
+RESOLUTION = 1  ## use to tune line search
+EPSILON = 1  ## use to tune new node finding
+DELTA = 1  ## use to tune goal finding
+PHI = 1  ## use to tune end state
+ITERATIONS = 500  ## use to tune runtime 
+
 """ Node Class """
 class Node(object):
     def __init__(self, coordinate, children, parent):
-        ## coordinate is pointi n C-Space, children is list of Nodes, parent is Node
+        ## coordinate is point in C-Space, children is list of Nodes, parent is Node
         self.data = coordinate
         self.children = children
         self.parent = parent
 
+""" 3D Vector Class """
+## Represents R2x[0,2pi)
+class Vector_3(object):
+    def __init__(self, x, y, a):
+        ## a is angle
+        self.x = x
+        self.y = y
+        self.a = a
+    def add(self, other):
+        ## get vector that adds other to self
+        x = self.x+other.x
+        y = self.y+other.y
+        a = self.a+other.a
+        return Vector_3(x,y,a)
+    def metric(self, other):
+        ## give distance between self and other in this space
+        ## give higher weight to translation over rotation through "tuning" parameters
+        dist = ((other.x-self.x)**2+(other.y-self.y)**2)**.5
+        rot = abs(other.a-self.a)
+        return dist*TUNING[0]+rot*TUNING[1]
+    def normalize(self):
+        ## normalize self
+        mag = self.metric(Vector_3(0,0,0))
+        x = self.x/mag
+        y = self.y/mag
+        a = self.a/mag
+        return Vector_3(x,y,a)
+    def scalar(self,c):
+        x = self.x*c
+        y = self.y*c
+        a = self.a*c
+        return Vector_3(x,y,a)
+
 """ C_Space Class """
 class C_Space(object):
     def __init__(self, obstacles, tuning):
-        ## list of Polygon/Circle obstacles in C-Space, tuning parameters
+        ## list of Polygon/Circle obstacles in R2, tuning parameters
         self.obstacles = obstacles
-        self.tuning = tuning
-    def metric(self, a, b):
-        ## give distance between two points in C-space
-        ## give higher weight to translation over rotation through "tuning" parameters
-        dist = ((a[0]-b[0])**2+(a[1]-b[1])**2)**.5
-        rot = abs(a[2]-b[2])
-        return dist.self.tuning[0]+rot*self.tuning[1]
-    def point_collision(self, shape):
-        ## determine if configuration "shape" collides with any obstacle
+        self.tuning = tuning  # tune metric weight
+    def point_collision(self, vec):
+        ## determine if configuration vec collides with any obstacle (create shape from C-Space point data)
+        ## TODO: create triangle in this file so we can check if triangle collides with obstacles
         for obstacle in obstacles:
             if obstacle is Circle:
                 if shape is Circle:
@@ -43,8 +78,19 @@ class C_Space(object):
                 return None
         return False
     def line_collision(self, start, end):
-        ## determines if line segment intersects with obstacle
-        pass
+        ## determines if line segment intersects with obstacle via sampling
+        resolution = RESOLUTION  ## sample resolution in form of max distance allowed between samples
+        direction = start.scalar(-1).add(end)
+        norm = direction.metric(Vector_3(0,0,0))
+        samp = start
+        scale = resolution
+        while samp.metric(end)>resolution:
+            norm = norm.scalar(scale)
+            next = start.add(norm)
+            if point_collision(next):
+                return False
+            scale+=resolution
+        return True 
 
 """ RRT Class """
 class RRT(object):
@@ -55,24 +101,72 @@ class RRT(object):
         self.c_space = c_space
     def select_rand(self):
         ## select new random point to explore
-        new_x = random.uniform(a,b) ### FILL
-        new_y = random.uniform(c,d) ### FILL
+        new_x = random.uniform(a,b) ### FILL a,b
+        new_y = random.uniform(c,d) ### FILL c,d
         new_rotation = random.uniform(0,math.pi)
-        return [new_x, new_y, new_rotation]
+        return Vector_3(new_x, new_y, new_rotation)
     def find_nearest_node(self, vertex):
         ## find node in vertex nearest to "verterx"
         min_dist = float(infty)
         min_node = None
         for node in self.nodes:
-            self.c_space.metric(node.data,vertex.data)
+            dist = vertex.data.metric(node.data)
             if dist < min_dist:
                 min_dist = dist
                 min_node = node
         return min_node
+    def new_node(self, vertex, point):
+        ## find the new node by moving form nearest (vertex) to rand (point) RETURNS VEC3 POINT!!!
+        vec = vertex.data
+        direction = vec.scalar(-1).add(point)
+        mag = direction.metric(Vector_3(0,0,0))
+        mag*=EPSILON
+        return vec.add(direction.scalar(mag))
     def expand_tree(self):
         ## expand tree by finding nearest viable node
+        viable = False
         new_point = select_rand()
+        while not viable:
+            if self.c_space.point_collision(new_point):
+                new_point = select_rand()
+            else:
+                viable = True
         nearest = find_nearest_node(new_point)
+        new_node = new_node(nearest,new_point)
+        if not self.c_space.line_collision(nearest.data,new_node):
+            self.nodes.append(Node(new_node, [], nearest))
+        else:
+            expand_tree()
+    def find_goal(self, target):
+        ## find goal region given target x,y coordinates
+        x = Vector_3(target[0].target[1],root.data.a)
+        valid = not self.c_space.point_collision(x):
+        if valid:    
+            return x
+        else:
+            count = 1
+            while not valid:
+                if count%2 == 0:
+                    new_x = x.add(Vector_3(0,0,DELTA*count))
+                else:
+                    new_x = x.add(Vector_3(0,0,DELTA*-1*count))
+                valid = not self.c_space.point_collision(new_x)
+            return new_x
+    def find_path(self, target):
+        ## return the shortest valid path based on Represents
+        target = find_goal(target)
+        recent = self.nodes[-1]
+        itera = 1
+        while recent.data.metric(target)>PHI and itera<ITERATIONS:
+            expand_tree()
+            recent = self.nodes[-1]
+            itera+=1
+        if itera = ITERATIONS:
+            ## RRT failed
+        else:
+            ## path smoothing
+
+
 
 
 
