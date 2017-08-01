@@ -1,14 +1,7 @@
 import math
 from random import uniform
 from vectors import Vector, Polygon, Circle
-from arm import Constants
-
-TUNING = [1,1]  ## use to Tune distance metric
-RESOLUTION = 1  ## use to tune line search
-EPSILON = 1  ## use to tune new node finding
-DELTA = 1  ## use to tune goal finding
-PHI = 1  ## use to tune end state
-ITERATIONS = 500  ## use to tune runtime 
+from variables import Constants, Tuners
 
 """ Node Class """
 class Node(object):
@@ -37,7 +30,7 @@ class Vector_3(object):
         ''' give higher weight to translation over rotation through "tuning" parameters'''
         dist = ((other.x-self.x)**2+(other.y-self.y)**2)**.5
         rot = abs(other.a-self.a)
-        return dist*TUNING[0]+rot*TUNING[1]
+        return dist*Tuners.TUNING[0]+rot*Tuners.TUNING[1]
     def normalize(self):
         ''' normalize self '''
         mag = self.metric(Vector_3(0,0,0))
@@ -54,35 +47,38 @@ class Vector_3(object):
 
 """ Fix Barriers """
 ## Rectangles on barrier 1 cup thick
-top = Polygon(Vector(0,Constants.TABLE_HEIGHT+Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    [Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT+2.0*Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT+2.0*Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
-bot = Polygon(Vector(0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-Constants.RADIUS),
-    [Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(2.0**.5)/6.0),
-    Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-2.0*Constants.RADIUS)
-    Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-2.0*Constants.RADIUS)])
-left = Polygon(Vector(Constants.TABLE_WIDTH/2.0+Constants.RADIUS,0),
-    [Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
-right = Polygon(Vector(-(Constants.TABLE_WIDTH/2.0+Constants.RADIUS),0),
-    [Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(-(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS),Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
-    Vector(-(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS),-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
-barrier = [top, left, bot, right]
+def fix_barriers():
+    top = Polygon(Vector(0,Constants.TABLE_HEIGHT+Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        [Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT+2.0*Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT+2.0*Constants.RADIUS-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
+    bot = Polygon(Vector(0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-Constants.RADIUS),
+        [Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(2.0**.5)/6.0),
+        Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-2.0*Constants.RADIUS),
+        Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0-2.0*Constants.RADIUS)])
+    left = Polygon(Vector(Constants.TABLE_WIDTH/2.0+Constants.RADIUS,0),
+        [Vector(Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
+    right = Polygon(Vector(-(Constants.TABLE_WIDTH/2.0+Constants.RADIUS),0),
+        [Vector(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(-(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS),Constants.TABLE_HEIGHT-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(-Constants.TABLE_WIDTH/2.0,-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0),
+        Vector(-(Constants.TABLE_WIDTH/2.0+2.0*Constants.RADIUS),-Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0)])
+    barriers = [top, left, bot, right]
+    return barriers
 
 """ Generate Triangle """
 def gen_triangle(vec):
     ## vec is center
     top = Vector(vec.x,vec.y+Constants.TRIANGLE_LENGTH*(3.0**.5)/3.0)
-    left = Vector(vec.x+Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
-    right = Vector(vec.x-Constants.TRIANGLE_LENGTH/2.0,vec.y-(TRIANGLE_LENGTH*(3.0**.5)/6.0))
-    triangle = Polygon(vec.x,vec.y,[top,left,right],0)
+    left = Vector(vec.x+Constants.TRIANGLE_LENGTH/2.0,vec.y-(Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0))
+    right = Vector(vec.x-Constants.TRIANGLE_LENGTH/2.0,vec.y-(Constants.TRIANGLE_LENGTH*(3.0**.5)/6.0))
+    triangle = Polygon(vec,[top,left,right])
+    return triangle
 
 """ C_Space Class """
 class C_Space(object):
@@ -91,7 +87,7 @@ class C_Space(object):
         ## barriers is edge of map represented by polygons above
         self.shape = shape
         self.obstacles = obstacles
-        self.barriers = barrier
+        self.barriers = fix_barriers()
     def point_collision(self, vec):
         ''' determine if configuration vec collides with any obstacle '''
         ## determine if triangle is in bounds
@@ -101,40 +97,44 @@ class C_Space(object):
             if edge.is_collision(triangle):
                 return True
         ## determine if blob of cups is colliding
-        shape = Polygon(self.shape.center,self.shape.vertices,self.shape.rotation)
-        shape.translate(Vector(vec.x-shape.center.x,vec.y-shape.center.y))
-        shape.rotate_around(triangle.center,vec.a)
-        for obstacle in obstacles:
-            if obstacle is Circle:
-                if shape is Circle:
-                    if obstacle.is_circle_collision(shape):
-                        return True
-                elif shape is Polygon:
-                    if obstacle.is_poly_collision(shape):
-                        return True
-            elif obstacle is Polygon:
-                if shape is Circle:
-                    if shape.is_poly_collision(obstacle):
-                        return True
-                elif shape is Polygon:
-                    if shape.is_collision(obstacle):
-                        return True
-            else:
-                return None
+        if self.shape is not None:
+            shape = Polygon(self.shape.center,self.shape.vertices,self.shape.rotation)
+            shape.translate(Vector(vec.x-shape.center.x,vec.y-shape.center.y))
+            shape.rotate_around(triangle.center,vec.a)
+            for obstacle in self.obstacles:
+                if type(obstacle) == Circle:
+                    if type(shape) == Circle:
+                        if obstacle.is_circle_collision(shape):
+                            return True
+                    elif type(shape) == Polygon:
+                        if obstacle.is_poly_collision(shape):
+                            return True
+                elif type(obstacle) == Polygon:
+                    if type(shape) == Circle:
+                        if shape.is_poly_collision(obstacle):
+                            return True
+                    elif type(shape) == Polygon:
+                        if shape.is_collision(obstacle):
+                            return True
+                else:
+                    return None
         return False
     def line_collision(self, start, end):
         ''' determines if line segment intersects with obstacle via sampling '''
-        resolution = RESOLUTION  ## sample resolution in form of max distance allowed between samples
+        resolution = Tuners.RESOLUTION  ## sample resolution in form of max distance allowed between samples
         direction = start.scalar(-1).add(end)
-        norm = direction.metric(Vector_3(0,0,0))
+        #norm = direction.metric(Vector_3(0,0,0))
+        #direction = direction.scalar(1.0/float(norm))
         samp = start
-        scale = resolution
-        while samp.metric(end)>resolution:
-            norm = norm.scalar(scale)
-            next = start.add(norm)
-            if point_collision(next):
+        scale = 1.0/float(resolution)
+        #dist = samp.metric(end)
+        for i in range(resolution):
+            temp = samp.metric(end)
+            direction = direction.scalar(scale)
+            next = start.add(direction)
+            if self.point_collision(next):
                 return False
-            scale+=resolution
+            scale+=(1.0/float(resolution))
         return True 
 
 """ RRT Class """
@@ -145,16 +145,16 @@ class RRT(object):
         self.c_space = c_space
     def select_rand(self):
         ''' select new random point to explore '''
-        new_x = random.uniform(a,b) ### TODO: Fill a,b
-        new_y = random.uniform(c,d) ### TODO: Fill c,d
-        new_rotation = random.uniform(0,math.pi)
+        new_x = uniform(-Constants.TABLE_WIDTH/2.0,Constants.TABLE_WIDTH/2.0) ### TODO: Fill a,b
+        new_y = uniform(-Constants.TABLE_HEIGHT*(3.0**.5)/6.0,Constants.TABLE_HEIGHT-Constants.TABLE_HEIGHT*(3.0**.5)/6.0) ### TODO: Fill c,d
+        new_rotation = uniform(0,2*math.pi)
         return Vector_3(new_x, new_y, new_rotation)
     def find_nearest_node(self, vertex):
         ''' find node in vertex nearest to "vertex" '''
-        min_dist = float(infty)
+        min_dist = float("inf")
         min_node = None
         for node in self.nodes:
-            dist = vertex.data.metric(node.data)
+            dist = vertex.metric(node.data)
             if dist < min_dist:
                 min_dist = dist
                 min_node = node
@@ -164,41 +164,42 @@ class RRT(object):
         vec = vertex.data
         direction = vec.scalar(-1).add(point)
         mag = direction.metric(Vector_3(0,0,0))
-        mag*=EPSILON
-        return vec.add(direction.scalar(mag))
+        mag/=Tuners.EPSILON
+        return vec.add(direction.scalar(1.0/float(mag)))
     def expand_tree(self):
         ''' expand tree by finding nearest viable node '''
         viable = False
-        new_point = select_rand()
+        new_point = self.select_rand()
         while not viable:
             if self.c_space.point_collision(new_point):
-                new_point = select_rand()
+                new_point = self.select_rand()
             else:
                 viable = True
-        nearest = find_nearest_node(new_point)
-        new_node = new_node(nearest,new_point)
+        nearest = self.find_nearest_node(new_point)
+        new_node = self.new_node(nearest,new_point)
         if not self.c_space.line_collision(nearest.data,new_node):
             self.nodes.append(Node(new_node, [], nearest))
         else:
-            expand_tree()
+            self.expand_tree()
     def find_path(self, target):
         ## target given as Vec_3
         ''' return the shortest valid path to target from root by expanding RRT '''
-        target = find_goal(target)
         recent = self.nodes[-1]
         itera = 1
-        while recent.data.metric(target)>PHI and itera<ITERATIONS:
-            expand_tree()
+        while recent.data.metric(target)>Tuners.PHI and itera<Tuners.ITERATIONS:
+            self.expand_tree()
             recent = self.nodes[-1]
             itera+=1
-        if itera = ITERATIONS:
+        if itera == Tuners.ITERATIONS:
             ## RRT failed (TODO: what to do next?)
+            print "RRT Failed"
+            return []
         else:
             self.nodes.append(Node(target, [], recent))  ## adds target to tree
             ## find path by backtracking (every node only has 1 parent)
             path = []
             current = self.nodes[-1]
-            while current != nodes[0]
+            while current != self.nodes[0]:
                 path.append(current)  ## will never append root config
                 current = current.parent
             states = []

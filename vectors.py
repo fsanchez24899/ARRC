@@ -40,6 +40,7 @@ class Vector(object):
         return Vector(float(self.x)/self.mag(), float(self.y)/self.mag())
     def rotate(self, angle):
         ## get vector rotated by angle using rotation matrix
+        # print "Type: "+str(type(angle))+" and value: "+str(angle)
         new_x = math.cos(angle)*self.x + -math.sin(angle)*self.y
         new_y = math.sin(angle)*self.x + math.cos(angle)*self.y
         return Vector(new_x, new_y)
@@ -77,7 +78,7 @@ class Polygon(object):
         point_flip = point.scalar(-1.0)
         cen_flip = self.center.scalar(-1.0)
         shift1 = self.center.add(point_flip)
-        shift2 = shift.rotate(angle)
+        shift2 = shift1.rotate(angle)
         shift_final = shift2.add(point)
         for vertex in self.vertices:
             p = vertex.add(cen_flip)
@@ -93,13 +94,13 @@ class Polygon(object):
         for vertex in self.vertices:
             new_vertex = vertex.add(shift)
             new_vertices.append(new_vertex)
-        new_center = center.add(shift)
+        new_center = self.center.add(shift)
         self.center = new_center
         self.vertices = new_vertices
     def normals(self):
         ## list of normal vectors
         edges = []
-        for i in range(len(self.vertices-1)):
+        for i in range(len(self.vertices)-1):
             flip = self.vertices[i].scalar(-1)
             edges.append(self.vertices[i+1].add(flip))
         flipper = self.vertices[-1].scalar(-1)
@@ -128,7 +129,7 @@ class Polygon(object):
         return (min_vertex, max_vertex)
     def is_collision(self, other):
         ## check if self and other collide
-        total_normals = self.normals() + other.normals()
+        total_normals = self.normals() | other.normals()
         for axis in total_normals:
             min_1, max_1 = self.min_max_proj(axis)
             min_2, max_2 = other.min_max_proj(axis)
@@ -143,20 +144,27 @@ class Circle(object):
         self.center = center
         self.r = r
     def translate(self, shift):
-        ## get circle translated by shift
+        ## update circle translated by shift
         new_center = self.center.add(shift)
         self.center = new_center
+    def rotate_around(self, point, angle):
+        ## update circle to be rotated around point by angle
+        point_flip = point.scalar(-1.0)
+        shift = self.center.add(point_flip)
+        rot = shift.rotate(angle)
+        final = point.add(rot)
+        self.center = final
     def is_poly_collision(self, other):
         ## checks if circle intersects with a polygon
         connectors = []
         flip = self.center.scalar(-1)
         for point in other.vertices:
-            egde = point.add(flip)
+            edge = point.add(flip)
             connectors.append(edge)
         normals = other.normals()
-        for edge in connectors:
-            if edge.scalar(-1) not in normals:
-                normals.add(edge)
+        for edge2 in connectors:
+            if edge2.scalar(-1) not in normals:
+                normals.add(edge2)
         for axis in normals:
             proj_cen = self.center.dot(axis)
             min_other, max_other = other.min_max_proj(axis)
@@ -204,32 +212,61 @@ def convex_hull(polygons):
     ## return Hull as list of vector points in original coordinate system
     points = []
     for poly in polygons:
+        if type(poly) == Circle:
+            poly = poly.decompose()
         temp = poly.vertices
         for point in temp:
             points.append(point)
+    if len(points) == 3:
+        x_tot = 0
+        y_tot = 0
+        for point in points:
+            x_tot += point.x
+            y_tot += point.y
+        cen = Vector(x_tot/3.0,y_tot/3.0)
+        return Polygon(cen, points)
+    if len(points) < 3:
+        return None
     p0 = min(points, key=lambda x: (x.y,x.x))
     points.remove(p0)
     p0_ = p0.scalar(-1.0)
     for point in points:
         point.add(p0_)
     s_points = sorted(points, cmp=compare)
+    floor = Vector(1,0)
+    count = 0
+    i = 0
+    tot = len(s_points)
+    while count<tot-1:  ## remove extra points of the same angle
+        if s_points[i].angle(floor) == s_points[i+1].angle(floor):
+            s_points.pop(i)
+            i-=1
+        i+=1
+        count+=1
     stack = [Vector(0,0)]
-    for i in range(2):
+    for i in range(1):
         stack.append(s_points[i])
-    for i in range(2, len(s_points)-1):
-        right = True
-        while right:
-            first = stack[-2].add(stack[-3].scalar(-1))
-            second = stack[-1].add(stack[-2].scalar(-1))
-            check = first.orientation(second)
-            if check == -1:
-                right = False
+    for i in range(1, len(s_points)-1):
+        stack.append(s_points[i])
+        prev = stack[-2]
+        curr = stack[-1]
+        next = s_points[i+1]
+        first = curr.add(prev.scalar(-1.0))
+        second = next.add(curr.scalar(-1.0))
+        check = first.orientation(second)
+        if check != -1:
             stack.pop(-1)
-        stack.append(s_points[i])
     ans = []
     for point in stack:
         ans.append(point.add(p0))
-    return ans
+    ## find center of the hull
+    x_tot = 0
+    y_tot = 0
+    for point in ans:
+        x_tot += point.x
+        y_tot += point.y
+    cen = Vector(x_tot/float(len(ans)),y_tot/float(len(ans)))
+    return Polygon(cen,ans)
 
 
 
